@@ -7,6 +7,9 @@ import google.generativeai as genai
 from pypdf import PdfReader
 from sentence_transformers import SentenceTransformer
 from dotenv import load_dotenv
+from processor import process_uploaded_file
+from utils import save_temp_file
+
 
 # ============================================================
 # CONFIGURACIÓN GENERAL
@@ -44,20 +47,9 @@ if "pdf_hash" not in st.session_state:
 def hash_pdf(file) -> str:
     return hashlib.sha256(file.getvalue()).hexdigest()
 
-def extract_text_from_pdf(pdf_file):
-    """
-    Extrae texto de un PDF digital (no escaneado).
-    Incluye el número de página como marcador.
-    """
-    reader = PdfReader(pdf_file)
-    text = ""
-
-    for i, page in enumerate(reader.pages):
-        content = page.extract_text()
-        if content:
-            text += f"\n[Página {i+1}]\n{content}"
-
-    return text
+def extract_text_from_file(uploaded_file):
+    return process_uploaded_file(uploaded_file)
+ 
 
 
 def chunk_text(text):
@@ -247,7 +239,11 @@ Pregunta:
 
 st.title("📄 Chat con PDF + ChromaDB + Gemini")
 
-uploaded_pdf = st.file_uploader("Sube un PDF", type="pdf")
+uploaded_pdf = st.file_uploader(
+    "Sube un archivo",
+    type=["pdf", "txt", "docx", "pptx", "xlsx"]
+)
+
 
 # 🔄 Detectar cambio de PDF y resetear estado
 if uploaded_pdf:
@@ -262,14 +258,14 @@ if uploaded_pdf:
 # BOTÓN PROCESAR PDF
 # ------------------------------
 if uploaded_pdf and not st.session_state.pdf_processed:
-    if st.button("📥 Procesar PDF"):
-        with st.spinner("Procesando PDF..."):
-            text = extract_text_from_pdf(uploaded_pdf)
+    if st.button("📥 Procesar Archivo"):
+        with st.spinner("Procesando Archivo..."):
+            text = extract_text_from_file(uploaded_pdf)
             chunks = chunk_text(text)
             st.session_state.collection = create_chroma_collection(chunks)
             st.session_state.pdf_processed = True
 
-        st.success(f"PDF procesado ✅ ({len(chunks)} fragmentos)")
+        st.success(f"Archivos procesado ✅ ({len(chunks)} fragmentos)")
 
 # ------------------------------
 # SECCIÓN DE PREGUNTAS
